@@ -37,5 +37,6 @@ public class Shooter : MonoBehaviour
         {
             rb.linearVelocity = bulletSpawnPoint.forward * bulletSpeed;
         }
+        BulletTracker.BulletFired();
     }
 }

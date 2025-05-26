@@ -7,8 +7,9 @@ public class ObjectPooling : MonoBehaviour
     [SerializeField] private int poolSize;
 
     private List<GameObject> pooledObjects;
+    public List<GameObject> PooledObjects => pooledObjects;
 
-    void Start()
+    void Awake()
     {
         InitializePool();
     }
@@ -33,11 +34,20 @@ public class ObjectPooling : MonoBehaviour
                 return pooledObjects[i];
             }
         }
-        return null; // or expand pool if needed
+        return null;
     }
 
     public void ReturnToPool(GameObject obj)
     {
         obj.SetActive(false);
+    }
+
+    public void ResetPool()
+    {
+        if (pooledObjects == null) return;
+        foreach (var obj in pooledObjects)
+        {
+            obj.SetActive(false);
+        }
     }
 }
