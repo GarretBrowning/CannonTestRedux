@@ -1,10 +1,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// ObjectPooling is a component that enables an object to manage a pool of objects.
+/// It provides methods to get and return objects from the pool.
+/// </summary>
 public class ObjectPooling : MonoBehaviour
 {
-    [SerializeField] private GameObject objectPrefab;
-    [SerializeField] private int poolSize;
+    [SerializeField]
+    [Tooltip("The prefab object to spawn and pool.")]
+    private GameObject objectPrefab;
+
+    [SerializeField]
+    [Tooltip("The amount of objects to spawn and pool.")]
+    private int poolSize;
 
     private List<GameObject> pooledObjects;
     public List<GameObject> PooledObjects => pooledObjects;
@@ -25,6 +34,9 @@ public class ObjectPooling : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Returns an inactive object from the pool.
+    /// </summary>
     public GameObject GetPooledObject()
     {
         for (int i = 0; i < pooledObjects.Count; i++)

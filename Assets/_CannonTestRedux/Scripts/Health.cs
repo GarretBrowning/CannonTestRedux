@@ -1,6 +1,10 @@
 using UnityEngine;
 using System;
 
+/// <summary>
+/// Health component for objects (targets) that can take damage.
+/// Implements IDamageable interface to allow other components to damage it.
+/// </summary>
 public class Health : MonoBehaviour, IDamageable
 {
     [SerializeField] private float maxHealth = 1f;

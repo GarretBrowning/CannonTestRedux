@@ -1,11 +1,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// RespawningTargets is a component that manages the respawning of targets.
+/// It ensures targets are spawned in a specified area with minimum spacing.
+/// </summary>
 [RequireComponent(typeof(ObjectPooling))]
 public class RespawningTargets : MonoBehaviour
 {
-    private ObjectPooling objectPool;
-    private List<GameObject> pooledObjects; // Cache of pooled objects from objectPool
+    private ObjectPooling objectPool; // Target object pool.
+    private List<GameObject> pooledObjects; // Cache of pooled objects (targets) from objectPool.
 
     [Header("Spawn Area")]
     [SerializeField] private Vector3 spawnBoxSize = new(10, 5, 4);
@@ -13,10 +17,10 @@ public class RespawningTargets : MonoBehaviour
     [Header("Spacing")]
     [Tooltip("Minimum distance between respawned targets to avoid overlap.")]
     [SerializeField] private float minDistanceBetweenTargets = 1.0f;
-    [SerializeField] private int maxSpawnAttempts = 5;
 
-    [Header("Debug")]
-    [SerializeField] private bool debug;
+    [SerializeField]
+    [Tooltip("Maximum number of attempts to find a valid spawn position for each target.")]
+    private int maxSpawnAttempts = 5;
 
     private void Start()
     {
@@ -30,39 +34,27 @@ public class RespawningTargets : MonoBehaviour
     /// </summary>
     public List<TargetLifecycleHandler> Respawn()
     {
-        // Return empty if no pooled objects
         if (pooledObjects == null || pooledObjects.Count == 0)
             return new List<TargetLifecycleHandler>();
 
-        // Debug: Print active state of all pooled objects
-        for (int i = 0; i < pooledObjects.Count; i++)
-        {
-            if (debug) Debug.Log($"[Respawn] Target {i} active: {pooledObjects[i].activeInHierarchy}");
-        }
-
-        // Check if all targets are currently disabled
+        // Check if all targets are currently disabled:
         bool allDisabled = true;
-        foreach (var obj in pooledObjects)
+        foreach (var target in pooledObjects)
         {
-            if (obj.activeInHierarchy)
+            if (target.activeInHierarchy)
             {
                 allDisabled = false;
                 break;
             }
         }
 
-        if (!allDisabled)
-        {
-            if (debug) Debug.LogWarning("[Respawn] Not all targets are disabled, skipping respawn.");
-        }
-
-        // If all are disabled, respawn them with minimum spacing
+        // If all targets are disabled, respawn them with minimum spacing:
         if (allDisabled)
         {
             List<Vector3> usedPositions = new();
             for (int i = 0; i < pooledObjects.Count; i++)
             {
-                var obj = pooledObjects[i];
+                var target = pooledObjects[i];
                 // Try to find a valid spawn position with enough distance from others
                 Vector3 spawnPos = Vector3.zero;
                 for (int attempt = 0; attempt < maxSpawnAttempts; attempt++)
@@ -79,29 +71,26 @@ public class RespawningTargets : MonoBehaviour
                     }
                     if (!tooClose) break; // Found a valid position
                 }
-                obj.transform.position = spawnPos;
+                target.transform.position = spawnPos;
                 usedPositions.Add(spawnPos);
-                obj.SetActive(true);
-                if (debug) Debug.Log($"[Respawn] Target {i} set active at {spawnPos}");
+                target.SetActive(true);
             }
         }
 
-        // Gather all active targets and initialize them
+        // Gather all active targets and initialize them:
         List<TargetLifecycleHandler> activeTargets = new();
-        foreach (var obj in pooledObjects)
+        foreach (var target in pooledObjects)
         {
-            if (obj.activeInHierarchy)
+            if (target.activeInHierarchy)
             {
-                var handler = obj.GetComponent<TargetLifecycleHandler>();
+                var handler = target.GetComponent<TargetLifecycleHandler>();
                 handler.Init(objectPool);
                 activeTargets.Add(handler);
             }
         }
-        if (debug) Debug.Log($"[Respawn] Returning {activeTargets.Count} active targets.");
         return activeTargets;
     }
 
-    // Returns a random position within the spawn box volume centered on this object
     private Vector3 GetRandomSpawnPosition()
     {
         Vector3 halfExtents = spawnBoxSize * 0.5f;
@@ -120,7 +109,6 @@ public class RespawningTargets : MonoBehaviour
 
     public void ResetTargets()
     {
-        if (objectPool != null)
-            objectPool.ResetPool();
+        objectPool?.ResetPool();
     }
 } 

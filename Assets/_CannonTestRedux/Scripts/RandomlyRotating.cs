@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// RandomlyRotating is a component that rotates an object around a random axis at a random speed.
+/// </summary>
 public class RandomlyRotating : MonoBehaviour
 {
     [SerializeField]

@@ -1,5 +1,8 @@
 using UnityEngine;
 
+/// <summary>
+/// SelfDisabling is a component that disables a game object (bullet) after a specified amount of time.
+/// </summary>
 public class SelfDisabling : MonoBehaviour
 {
     [SerializeField] private float disableAfterSeconds = 2f;

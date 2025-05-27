@@ -1,6 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// SwitchingCameraViewpoint is a component that switches the camera viewpoint between third person and first person.
+/// </summary>
 public class SwitchingCameraViewpoint : MonoBehaviour
 {
     [Header("Viewpoint References")]
@@ -28,7 +31,7 @@ public class SwitchingCameraViewpoint : MonoBehaviour
     {
         if (targetCamera != null)
         {
-            // Store initial transform and parent
+            // Store initial transform and parent:
             initialCameraPosition = targetCamera.transform.position;
             initialCameraRotation = targetCamera.transform.rotation;
             initialCameraParent = targetCamera.transform.parent;
@@ -42,14 +45,16 @@ public class SwitchingCameraViewpoint : MonoBehaviour
     {
         if (targetCamera != null)
         {
-            // Restore camera to its original state
+            // Restore camera to its original state:
             targetCamera.transform.SetParent(initialCameraParent);
             targetCamera.transform.position = initialCameraPosition;
             targetCamera.transform.rotation = initialCameraRotation;
         }
     }
 
-    // Input callback for switching POV
+    /// <summary>
+    /// Switches the camera viewpoint between third person and first person.
+    /// </summary>
     public void OnSwitchPOV(InputAction.CallbackContext context)
     {
         if (context.performed)

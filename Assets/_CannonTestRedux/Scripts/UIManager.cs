@@ -1,12 +1,17 @@
 using UnityEngine;
-using UnityEngine.UI;
-using System.Collections;
 using TMPro;
 
+/// <summary>
+/// UIManager handles the UI elements and state management for the game.
+/// - Manages the visibility of UI elements based on the current UI state
+/// - Manages cursor lock state
+/// - Updates the score and time display
+/// - Shows the game over results
+/// - Manages the click-to-play-again prompt
+/// </summary>
 public class UIManager : MonoBehaviour
 {
-    #region Serialized Fields
-    // Serialized fields for UI elements
+    // UI Elements
     public GameObject titleScreen;
     public GameObject preGameScreen;
     public GameObject gameplayHUD;
@@ -30,27 +35,13 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI accuracyResultText;
     public TextMeshProUGUI clickToPlayAgainText;
 
-    #endregion
-
-    #region Private Fields
-    // Private state
     private UIState currentState;
-    #endregion
-
-    #region Public Properties
-    // Public property for current UI state
     public UIState CurrentState => currentState;
-    #endregion
-
-    #region Unity Lifecycle
     private void Awake()
     {
         SetUIState(UIState.Title);
     }
-    #endregion
 
-    #region UI State Management
-    // UI state management
     public void SetUIState(UIState state)
     {
         titleScreen.SetActive(state == UIState.Title);
@@ -60,26 +51,16 @@ public class UIManager : MonoBehaviour
 
         currentState = state;
 
-        // Manage cursor lock state
+        // Manage cursor lock state:
         if (state == UIState.Gameplay)
         {
             LockCursor();
         }
-        // Do not unlock cursor for GameOver here; handled in SetClickToPlayAgainActive
     }
-    #endregion
 
-    #region Public UI Update Methods
     // UI update methods
     public void UpdateScore(int score) => scoreText.text = score.ToString("D4");
     public void UpdateTime(float timeRemaining) => timeText.text = timeRemaining.ToString("F1");
-
-    public void ShowGameOverResults(int finalScore, int shotsFired, int targetsHit, float accuracy)
-    {
-        SetUIState(UIState.GameOver);
-        // GameManager will handle the coroutine for revealing results and call UIManager's update methods.
-    }
-
     public void SetFinalScoreText(string text) => finalScoreText.text = text;
     public void SetShotsFiredText(string text) => shotsFiredResultText.text = text;
     public void SetTargetsHitText(string text) => targetsHitResultText.text = text;
@@ -115,9 +96,7 @@ public class UIManager : MonoBehaviour
     public void ShowShotsFiredGroup() { if (shotsFiredGroup) shotsFiredGroup.SetActive(true); }
     public void ShowTargetsHitGroup() { if (targetsHitGroup) targetsHitGroup.SetActive(true); }
     public void ShowAccuracyGroup() { if (accuracyGroup) accuracyGroup.SetActive(true); }
-    #endregion
 
-    #region Cursor Lock Methods
     // Cursor lock methods
     public void LockCursor()
     {
@@ -130,7 +109,6 @@ public class UIManager : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
-    #endregion
 }
 
 public enum UIState

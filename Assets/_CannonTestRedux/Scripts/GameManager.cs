@@ -3,18 +3,38 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// GameManager handles the core game loop and scoring mechanics.
+/// - Manages game state (title, pre-game, gameplay, game over)
+/// - Tracks score, shots fired, targets hit, and accuracy
+/// - Controls target wave spawning and wave completion bonuses
+/// - Handles input map switching between UI and gameplay
+/// - Manages game timer and results display
+/// </summary>
 public class GameManager : MonoBehaviour
 {
+    private const float GAME_DURATION_SECONDS = 60f;
+
+    // UI References
     [SerializeField] private UIManager uiManager;
-    [SerializeField] private RespawningTargets targetSpawner;
-    [SerializeField] private int waveClearedBonus = 100;
-    [SerializeField] private GameObject player;
     [SerializeField] private PlayerInput playerInput;
 
-    [Header("Debug")]
-    [SerializeField] private bool debug;
+    // Player Reference
+    [SerializeField] private GameObject player;
+
+    // Target Management
+    [SerializeField]
+    [Tooltip("The target object pool that spawns and manages the targets.")]
+    private RespawningTargets targetSpawner;
+
+    [SerializeField]
+    [Tooltip("Bonus points awarded when all targets in a wave are destroyed.")]
+    private int waveClearedBonus = 100;
+
     private List<TargetLifecycleHandler> currentWave;
     private int targetsRemaining;
+
+    // Game State
     private int totalScore = 0;
     private int shotsFired = 0;
     private int targetsHit = 0;
@@ -23,13 +43,18 @@ public class GameManager : MonoBehaviour
     private Coroutine preGameCoroutine;
     private Coroutine revealResultsCoroutine;
     private bool clickToRestartRequested = false;
-    private const float GAME_DURATION_SECONDS = 5f; // TODO: Change to 60f for final game
 
     public int TotalScore => totalScore;
     public int ShotsFired => shotsFired;
     public int TargetsHit => targetsHit;
     public int Accuracy => shotsFired > 0 ? Mathf.RoundToInt((float)targetsHit / shotsFired * 100f) : 0;
 
+    /// <summary>
+    /// Subscribes to scoring, target hit, and bullet fired events when this component is enabled.
+    /// - OnScored: Called when points are scored, handled by HandleScore
+    /// - OnTargetHit: Called when a target is hit, handled by HandleTargetHit 
+    /// - OnBulletFired: Called when player fires a bullet, handled by HandleBulletFired
+    /// </summary>
     private void OnEnable()
     {
         Scorable.OnScored += HandleScore;
@@ -52,11 +77,11 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        // Only allow click-to-start in Title state (handled by OnClick now)
-        // Existing game logic
         if (!isGameActive) return;
+
         timeRemaining -= Time.deltaTime;
         uiManager.UpdateTime(timeRemaining);
+
         if (timeRemaining <= 0f)
         {
             EndGame();
@@ -65,7 +90,6 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator StartPreGameCountdown()
     {
-        SwitchToUIInputMap();
         uiManager.SetUIState(UIState.PreGame);
         float countdown = 3f;
         while (countdown > 0f)
@@ -89,25 +113,34 @@ public class GameManager : MonoBehaviour
         shotsFired = 0;
         uiManager.UpdateScore(0);
 
-        targetSpawner.ResetTargets(); // Reset all targets before spawning new wave
+        targetSpawner.ResetTargets(); // Reset all targets before spawning new wave.
         SpawnNewWave();
-        player?.SetActive(true);
+        player?.SetActive(true); // 'Spawn' the player.
     }
 
     public void RestartGame()
     {
-        // Start the pre-game countdown again, skipping the title screen
+        uiManager?.LockCursor();
+        // Restarts the game at the pre-game countdown:
         if (preGameCoroutine != null) StopCoroutine(preGameCoroutine);
-        if (uiManager != null) uiManager.LockCursor(); // Hide/lock cursor immediately
         preGameCoroutine = StartCoroutine(StartPreGameCountdown());
     }
         
+    /// <summary>
+    /// Handles the end of the game by:
+    /// - Switching to UI input controls
+    /// - Stopping gameplay
+    /// - Calculating final accuracy
+    /// - Displaying game over screen with results
+    /// - Disabling the player
+    /// - Starting the results reveal animation
+    /// </summary>
     private void EndGame()
     {
         SwitchToUIInputMap();
         isGameActive = false;
         int accuracy = shotsFired > 0 ? Mathf.RoundToInt((float)targetsHit / shotsFired * 100f) : 0;
-        uiManager.ShowGameOverResults(totalScore, shotsFired, targetsHit, accuracy);
+        uiManager.SetUIState(UIState.GameOver);
         player?.SetActive(false);
         if (revealResultsCoroutine != null) StopCoroutine(revealResultsCoroutine);
         revealResultsCoroutine = StartCoroutine(RevealResults(totalScore, shotsFired, targetsHit, accuracy));
@@ -115,19 +148,30 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator RevealResults(int finalScore, int shotsFired, int targetsHit, float accuracy)
     {
+        // Clear previous results and show each stat with 1 second delay between them
         uiManager.ClearGameOverTexts();
+        
+        // Show final score:
         yield return new WaitForSeconds(1f);
         uiManager.SetFinalScoreText($"{finalScore}");
         uiManager.ShowFinalScoreGroup();
-        yield return new WaitForSeconds(1f);
+        
+        // Show shots fired:
+        yield return new WaitForSeconds(1f); 
         uiManager.SetShotsFiredText($"{shotsFired}");
         uiManager.ShowShotsFiredGroup();
+        
+        // Show targets hit:
         yield return new WaitForSeconds(1f);
         uiManager.SetTargetsHitText($"{targetsHit}");
         uiManager.ShowTargetsHitGroup();
+        
+        // Show accuracy percentage:
         yield return new WaitForSeconds(1f);
         uiManager.SetAccuracyText($"{accuracy}%");
         uiManager.ShowAccuracyGroup();
+        
+        // Enable restart prompt
         yield return new WaitForSeconds(1f);
         uiManager.SetClickToPlayAgainActive(true);
         StartCoroutine(WaitForClickToRestart());
@@ -142,10 +186,12 @@ public class GameManager : MonoBehaviour
 
     private void SpawnNewWave()
     {
-        currentWave = targetSpawner.Respawn();
-        targetsRemaining = currentWave.Count;
-        if (debug) Debug.Log($"Spawned {targetsRemaining} targets in new wave");
+        currentWave = targetSpawner.Respawn(); // Respawn the targets.
+        targetsRemaining = currentWave.Count; // Reset number of targets remaining.
 
+        // Unsubscribe and resubscribe to OnTargetDestroyed event for each target in the new wave
+        // This ensures we don't have duplicate subscriptions if targets are reused from object pooling
+        // and guarantees we're subscribed exactly once to handle scoring and wave completion.
         foreach (var target in currentWave)
         {
             target.OnTargetDestroyed -= HandleTargetDestroyed;
@@ -159,6 +205,11 @@ public class GameManager : MonoBehaviour
         uiManager.UpdateScore(totalScore);
     }
 
+    /// <summary>
+    /// Unsubscribes from the destroyed target's event and tracks remaining targets.
+    /// Awards bonus points and spawns a new wave of targets when all targets in the current wave are destroyed.
+    /// </summary>
+    /// <param name="target">The target that was destroyed</param>
     private void HandleTargetDestroyed(TargetLifecycleHandler target)
     {
         target.OnTargetDestroyed -= HandleTargetDestroyed;
@@ -166,19 +217,19 @@ public class GameManager : MonoBehaviour
 
         if (targetsRemaining <= 0)
         {
-            totalScore += waveClearedBonus; // Wave cleared bonus
-            uiManager.UpdateScore(totalScore); // Update UI after bonus
-            // Delay spawning the new wave by one frame to avoid Unity's SetActive timing issue.
-            // If you deactivate and immediately reactivate a GameObject in the same frame,
-            // Unity may keep it inactive. Waiting one frame ensures all objects are properly deactivated first.
-            StartCoroutine(DelayedSpawnNewWave());
-            if (debug) Debug.Log("Spawned new wave of targets (delayed)");
+            totalScore += waveClearedBonus;
+            uiManager.UpdateScore(totalScore);
+            StartCoroutine(SpawnNewWaveNextFrame());
         }
     }
 
-    private IEnumerator DelayedSpawnNewWave()
+    /// <summary>
+    /// Spawns a new wave of targets on the next frame to ensure all previous targets have been properly disabled first.
+    /// This delay helps avoid Unity's SetActive timing issues where objects may not be fully deactivated if done in the same frame.
+    /// </summary>
+    private IEnumerator SpawnNewWaveNextFrame()
     {
-        yield return null; // Wait one frame
+        yield return null;
         SpawnNewWave();
     }
 
@@ -192,6 +243,12 @@ public class GameManager : MonoBehaviour
         targetsHit++;
     }
 
+    /// <summary>
+    /// Handles click input events from the Input System.
+    /// When in Title screen state, starts the pre-game countdown.
+    /// When in GameOver state, sets flag to request game restart.
+    /// </summary>
+    /// <param name="context">Input action callback context containing input state</param>
     public void OnClick(InputAction.CallbackContext context)
     {
         if (context.performed)
@@ -203,6 +260,7 @@ public class GameManager : MonoBehaviour
             }
             else if (uiManager != null && uiManager.CurrentState == UIState.GameOver)
             {
+                // Set flag to request restart on next frame:
                 clickToRestartRequested = true;
             }
         }

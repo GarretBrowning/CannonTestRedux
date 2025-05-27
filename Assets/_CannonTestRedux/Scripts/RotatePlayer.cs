@@ -1,10 +1,13 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// RotatePlayer is a component that rotates the player's body and arm cannon.
+/// </summary>
 public class RotatePlayer : MonoBehaviour
 {
     private const float INITIAL_CANNON_OFFSET = 90f;
-    private static readonly Vector3 INITIAL_ROTATION = Vector3.zero;
+    private static readonly Vector3 INITIAL_PLAYER_ROTATION = Vector3.zero;
 
     [SerializeField] private float bodyRotationSpeed = 10f;
     [SerializeField] private float armCannonRotationSpeed = 10f;
@@ -36,7 +39,7 @@ public class RotatePlayer : MonoBehaviour
 
     private void ResetPlayerRotation()
     {
-        transform.rotation = Quaternion.Euler(INITIAL_ROTATION);
+        transform.rotation = Quaternion.Euler(INITIAL_PLAYER_ROTATION);
     }
 
     private void RotatePlayerBody(float rotationX)
@@ -53,7 +56,7 @@ public class RotatePlayer : MonoBehaviour
         if (armCannonPivot == null || rotationY == 0) return;
 
         float pitchDelta = rotationY * armCannonRotationSpeed * Time.deltaTime;
-        currentCannonPitch = Mathf.Clamp(currentCannonPitch - pitchDelta, -90f, 90f);
+        currentCannonPitch = Mathf.Clamp(currentCannonPitch - pitchDelta, -90f, 90f); // Clamp the pitch to the range of -90 to 90 degrees.
         armCannonPivot.localRotation = Quaternion.Euler(INITIAL_CANNON_OFFSET + currentCannonPitch, 0f, 0f);
     }
 }
