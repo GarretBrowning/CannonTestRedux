@@ -39,7 +39,7 @@ public class GameManager : MonoBehaviour
     private int shotsFired = 0;
     private int targetsHit = 0;
     private float timeRemaining;
-    private bool isGameActive;
+    private bool isGameActive; // True when in main gameplay; false during menus or transitions.
     private Coroutine preGameCoroutine;
     private Coroutine revealResultsCoroutine;
     private bool clickToRestartRequested = false;
